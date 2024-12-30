@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor de Código Interactivo con CodeMirror</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/codemirror.min.css">
+<style>
+  body {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+  }
+
+  #editor-container,
+  #preview-container {
+    flex: 1;
+    padding: 0;
+    box-sizing: border-box;
+    height: 100vh;
+  }
+
+  #editor-container {
+    border-right: 1px solid #ccc;
+    overflow: hidden;
+  }
+
+  #editor-header,
+  #preview-header {
+    font-size: 18px;
+    margin-bottom: 10px;
+    padding: 20px;
+  }
+
+  #editor {
+    width: 100%;
+    height: calc(100vh - 120px); /* Altura del editor: 100vh - altura del encabezado */
+    border: none;
+  }
+
+  #preview {
+    width: 100%;
+    height: calc(100vh - 120px); /* Altura del visor: 100vh - altura del encabezado */
+    border: none;
+  }
+
+  .CodeMirror {
+    height: calc(100vh - 140px); /* Altura del editor: 100vh - altura del encabezado */
+  }
+
+  .divider {
+    width: 5px;
+    background-color: #ccc;
+    cursor: col-resize;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+  }
+
+  .dark-mode {
+    background-color: #333 !important;
+    color: white !important;
+  }
+
+  .dark-mode .CodeMirror {
+    background-color: #1E1E1E !important;
+    color: white !important;
+  }
+
+  .dark-mode #preview-container {
+    background-color: #1E1E1E !important;
+    color: white !important;
+  }
+
+  .dark-mode #preview {
+    border: none !important;
+  }
+
+  .dark-mode .CodeMirror-cursor {
+    border-color: white !important;
+  }
+
+
+  </style>
+  </head>
+  <body>
+    <div id="editor-container">
+      <div id="editor-header">
+        <div id="editor-title">Escribe tu código aquí</div>
+        <button id="run-button" class="button"><i class="icon">▶️</i> Ejecutar</button>
+        <button id="clear-button" class="button"><i class="icon">🗑️</i> Limpiar Código</button>
+        <button id="download-button" class="button"><i class="icon">⬇️</i> Descargar Código</button>
+        <button id="copy-button" class="button"><i class="icon">📋</i> Copiar</button>
+        <button id="dark-mode-button" class="button"><i class="icon">🌙</i> Modo Oscuro</button>
+      </div>
+      <div id="editor">
+        <textarea id="code-input" placeholder="Escribe tu código HTML escapado aquí ...">
+
+            &lt;!DOCTYPE html&gt;
+            &lt;html&gt;
+            &lt;body&gt;
+            &lt;h1&gt;JavaScript Functions&lt;/h1&gt;
+            
+            &lt;p&gt;Call a function which performs a calculation and returns the result:&lt;/p&gt;
+            
+            &lt;p id=&quot;demo&quot;&gt;&lt;/p&gt;
+            
+            &lt;script&gt;
+            function myFunction(p1, p2) {
+              return p1 * p2;
+            }
+            
+            let result = myFunction(4, 3);
+            document.getElementById(&quot;demo&quot;).innerHTML = result;
+            &lt;/script&gt;
+            
+            &lt;/body&gt;
+            &lt;/html&gt;
+
+
+
+
+        </textarea>
+        <div class="divider"></div>
+      </div>
+    </div>
+    <div id="preview-container">
+      <div id="preview-header">Área de Visualización</div>
+      <pre id="preview-code"></pre>
+      <button id="copy-preview-button" class="button"><i class="icon">📋</i> Copiar Vista Previa</button>
+      <button id="download-preview-button" class="button"><i class="icon">⬇️</i> Descargar Vista Previa</button>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script>
+      const editor = CodeMirror.fromTextArea(document.getElementById('code-input'), {
+        mode: 'htmlmixed',
+        lineNumbers: true,
+        theme: 'default',
+        lineWrapping: true,
+        viewportMargin: Infinity,
+        scrollbarStyle: null,
+      });
+  
+      const runButton = document.getElementById('run-button');
+      const copyButton = document.getElementById('copy-button');
+      const preview = document.getElementById('preview-code');
+  
+      const clearButton = document.getElementById('clear-button');
+      const downloadButton = document.getElementById('download-button');
+      const copyPreviewButton = document.getElementById('copy-preview-button');
+      const downloadPreviewButton = document.getElementById('download-preview-button');
+      const darkModeButton = document.getElementById('dark-mode-button');
+  
+      const divider = document.querySelector('.divider');
+      const editorContainer = document.getElementById('editor-container');
+      const previewContainer = document.getElementById('preview-container');
+  
+      let resizing = false;
+  
+      function updatePreview() {
+        const code = editor.getValue();
+        preview.textContent = escapeHtml(code);
+      }
+  
+      function escapeHtml(unsafe) {
+        return unsafe
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
+      }
+  
+      runButton.addEventListener('click', updatePreview);
+  
+      copyButton.addEventListener('click', () => {
+        editor.execCommand('selectAll');
+        document.execCommand('copy');
+      });
+  
+      clearButton.addEventListener('click', () => {
+        editor.setValue('');
+        updatePreview();
+      });
+  
+      downloadButton.addEventListener('click', () => {
+        const code = editor.getValue();
+        const blob = new Blob([code], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'codigo.html';
+        a.click();
+      });
+  
+      copyPreviewButton.addEventListener('click', () => {
+        const previewCode = preview.textContent;
+        copyToClipboard(previewCode);
+      });
+  
+      downloadPreviewButton.addEventListener('click', () => {
+        const previewCode = preview.textContent;
+        const blob = new Blob([previewCode], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'vista_previa.html';
+        a.click();
+      });
+  
+      function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        editor.setOption('theme', document.body.classList.contains('dark-mode') ? 'material-darker' : 'default');
+        preview.style.backgroundColor = document.body.classList.contains('dark-mode') ? '#1E1E1E' : 'white';
+        preview.style.color = document.body.classList.contains('dark-mode') ? 'white' : 'black';
+      }
+  
+      darkModeButton.addEventListener('click', toggleDarkMode);
+  
+      function copyToClipboard(text) {
+        const tempInput = document.createElement('textarea');
+        tempInput.value = text;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+      }
+  
+      updatePreview();
+  
+      divider.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        resizing = true;
+      });
+  
+      document.addEventListener('mousemove', (e) => {
+        if (!resizing) return;
+        const x = e.pageX;
+        const editorWidth = x - editorContainer.getBoundingClientRect().left;
+        editorContainer.style.width = editorWidth + 'px';
+        previewContainer.style.width = `calc(100% - ${editorWidth}px)`;
+        editor.refresh();
+      });
+  
+      document.addEventListener('mouseup', () => {
+        resizing = false;
+      });
+  
+      window.addEventListener('resize', () => {
+        const windowWidth = window.innerWidth;
+        if (windowWidth < 768) {
+          editorContainer.style.width = '100%';
+          previewContainer.style.width = '100%';
+        }
+      });
+  
+      window.dispatchEvent(new Event('resize'));
+    </script>
+  </body>
+  </html>
