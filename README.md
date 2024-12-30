@@ -5,7 +5,7 @@
 
 
 ## Acceso Rápido a la Aplicación
-[HTMLescapado]((https://xococode.github.io/HTMLescapado.github.io/))
+[HTMLescapado](https://xococode.github.io/HTMLescapado.github.io/)
 
 ## Descripción
 
